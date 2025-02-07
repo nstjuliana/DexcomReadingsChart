@@ -2,7 +2,7 @@ let chart; // Declare chart globally
 let labels;
 let values;
 let lastReadingTime;
-let g_numberofDataPoints;
+let numberOfDataPoints;
 
 function updateTime() {
     const latestValueElement = document.getElementById('latestValue'); // Reference to the latest value div
@@ -45,14 +45,8 @@ function updateTime() {
 async function fetchData() {
     
     try {
-        // Set g_numberofDataPoints to the number of data points requested
-        // g_numberofDataPoints = ;
-
-        // Default to 1000 data points if not provided
-        // numberofDataPoints = numberofDataPoints || 1000;
-
         // Fetch data from the server API using numberofDataPoints
-        const response = await fetch(`/api/data?limit=${g_numberofDataPoints}`);
+        const response = await fetch(`/api/data?limit=${numberOfDataPoints}`);
 
         const result = await response.json();
 
@@ -257,7 +251,7 @@ function createChart(){
             // const newLabels = labels.slice(-numDataPoints);
             // const newValues = values.slice(-numDataPoints);
 
-            g_numberofDataPoints = numDataPoints;
+            numberOfDataPoints = numDataPoints;
 
             fetchData();
             chart.resetZoom();
@@ -270,15 +264,9 @@ window.onload = async function() {
     updateTime();
     await setInterval(() => {
         fetchData(); // Fetch new data and update time
-        updateChartData(chart.data.labels.length);
     }, 5000); // Update every 5 seconds
     setInterval(() => {
         updateTime();
     }, 1000)
 
-    //Test add data points
-    // setInterval(() => {
-    //     values[values.length] = 100;
-    //     updateChartData(chart.data.labels.length);
-    // }, 1000)
 };

@@ -4,7 +4,7 @@
     <title>Is Noah Alive?</title>
 
 
-<!-- <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
     <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -13,8 +13,6 @@
 <!-- chartjs-plugin-zoom CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.0.1"></script>
 
-    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script> -->
-<!-- 
     <style>
         .chart-container {
             width: 80%;
@@ -38,7 +36,7 @@
     font-weight: bold;
 }
 
-    </style> -->
+    </style>
 </head>
 <body>
     <!-- Buttons to change the data range -->
@@ -52,6 +50,10 @@
 <div id="latestValueContainer" style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px;">
    <div id="latestValue" style="font-size: 36px;font-family: Arial"></div>
 </div>
+<br>
+<div id="latestTimeContainer" style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px;">
+    <div id="latestTime" style="font-size: 18px;font-family: Arial"></div>
+ </div>
     <div class="chart-container">
         <canvas id="dataChart"></canvas>
     </div>
