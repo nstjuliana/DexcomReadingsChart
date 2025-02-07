@@ -2,7 +2,7 @@ let chart; // Declare chart globally
 let labels;
 let values;
 let lastReadingTime;
-let numberOfDataPoints;
+let numberOfDataPoints = 72;
 
 function updateTime() {
     const latestValueElement = document.getElementById('latestValue'); // Reference to the latest value div
@@ -63,6 +63,7 @@ async function fetchData() {
             chart.data.labels = labels;
             chart.data.datasets[0].data = values;
             chart.update();
+            setZoomLimits();
         }
         return;
     } catch {
@@ -103,8 +104,27 @@ function createChart() {
                     },
                     x: {
                         type: 'timeseries',
-                        min: Date.now() - 86400000, // 24 hours ago
-                        max: Date.now() // Now
+                        //display in hh:mm AM/PM format
+                        time: { 
+                            unit: 'hour',
+                            displayFormats: {
+                                hour: 'h:mm a'
+                            }
+                        },
+                        ticks: {
+                            //rotation 0 degrees
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
+                    },
+                    //days at the top of the chart
+                    x2: { 
+                        type: 'timeseries',
+                        display: true,
+                        position: 'top',
+                        time: {
+                            unit: 'day'
+                        },
                     }
                 },
 
@@ -186,6 +206,10 @@ function createChart() {
 // Function to set the zoom limits of the chart
 function setZoomLimits() {
     chart.options.plugins.zoom.limits = {
+            x: {
+              min: labels[0],  // Prevent zooming out beyond the first label
+              max: labels[labels.length - 1], // Prevent zooming out beyond the last label
+            },
         y: { min: 'original', max: 'original' }
     };
     console.log('Zoom limits set');
