@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Is Noah Alive?</title>
+
+
+<!-- <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script> -->
+    <!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+
+<!-- chartjs-plugin-zoom CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.0.1"></script>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script> -->
+<!-- 
+    <style>
+        .chart-container {
+            width: 80%;
+            margin: 20px auto;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        #latestValueContainer {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center;     /* Center vertically */
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#latestValue {
+    font-size: 18px;
+    text-align: center; /* Ensure the text is centered */
+    font-weight: bold;
+}
+
+    </style> -->
+</head>
+<body>
+    <!-- Buttons to change the data range -->
+<div>
+    <button id="show1hr">1 Hour</button>
+    <button id="show6hr">6 Hour</button>
+    <button id="show12hr">12 Hour</button>
+    <button id="show24hr">24 Hour</button>
+    <button id="showAll">All</button>
+</div>
+<div id="latestValueContainer" style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px;">
+   <div id="latestValue" style="font-size: 36px;font-family: Arial"></div>
+</div>
+    <div class="chart-container">
+        <canvas id="dataChart"></canvas>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
