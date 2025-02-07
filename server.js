@@ -1,12 +1,13 @@
+require('dotenv').config();
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const path = require('path');
 
 const app = express();
-const port = 3000;
-const uri = "mongodb+srv://nstj:as1111@cluster0.xa8tgku.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const dbName = "Dexcom";  // Replace with your database name
-const collectionName = "Readings";  // Replace with your collection name
+const port = process.env.PORT; // Default port 3000
+const uri = process.env.MONGODB_URI;
+const dbName = process.env.DB_NAME;
+const collectionName = process.env.COLLECTION_NAME;
 
 // Initialize MongoDB client globally and maintain persistent connection
 let client;
@@ -20,8 +21,7 @@ async function connectToMongoDB() {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
                 tls: true,
-                serverSelectionTimeoutMS: 3000,
-                autoSelectFamily: false
+                serverSelectionTimeoutMS: 3000
             });
 
             await client.connect();

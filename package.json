@@ -4,6 +4,7 @@
   "description": "Is Noah Alive?",
   "main": "server.js",
   "dependencies": {
+    "dotenv": "^16.4.7",
     "express": "^4.17.1",
     "mongodb": "^4.1.0"
   }

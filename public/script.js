@@ -2,9 +2,11 @@ let chart; // Declare chart globally
 let labels;
 let values;
 let lastReadingTime;
+let g_numberofDataPoints;
 
 function updateTime() {
     const latestValueElement = document.getElementById('latestValue'); // Reference to the latest value div
+    const latestTimeElement = document.getElementById('latestTime'); // Reference to the latest value div
 
     if (labels)
     {
@@ -19,8 +21,6 @@ function updateTime() {
     const currentTime = new Date();
     const timeDifference = currentTime - lastReadingTime; // Difference in milliseconds
 
-    console.log(timeDifference);
-
     // Convert time difference to readable format
     const seconds = Math.floor(timeDifference / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -33,8 +33,10 @@ function updateTime() {
     const latestValue = String(values[values.length - 1]);
     // Update the latest value display with the time difference
     latestValueElement.innerHTML = `
-        Last Reading: ${latestValue} <br>
-        Time since last reading: ${timeSinceLastReading}
+        ${latestValue}
+    `;
+    latestTimeElement.innerHTML = `
+        ${timeSinceLastReading} ago
     `;
 
 }
@@ -43,7 +45,15 @@ function updateTime() {
 async function fetchData() {
     
     try {
-        const response = await fetch('/api/data');
+        // Set g_numberofDataPoints to the number of data points requested
+        // g_numberofDataPoints = ;
+
+        // Default to 1000 data points if not provided
+        // numberofDataPoints = numberofDataPoints || 1000;
+
+        // Fetch data from the server API using numberofDataPoints
+        const response = await fetch(`/api/data?limit=${g_numberofDataPoints}`);
+
         const result = await response.json();
 
         if (!result.success) {
@@ -65,6 +75,12 @@ async function fetchData() {
         // Prepare labels and values
         labels = data.map(item => new Date(item._datetime).toLocaleString());
         values = data.map(item => item._value);
+
+        if (chart) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = values;
+            chart.update();
+        }
         return
     }
     catch
@@ -115,9 +131,12 @@ function createChart(){
                             minRotation: 45,
                             callback: function(value, index) {
                                 const date = new Date(labels[index]);
-                                const hour = date.getHours();
-                                const mins = date.getMinutes();
-                                return `${String(hour).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+                                const hours = date.getHours();
+                                const minutes = date.getMinutes();
+                                const ampm = hours >= 12 ? 'PM' : 'AM';
+                                const formattedHours = hours % 12 || 12;
+                                const formattedMinutes = String(minutes).padStart(2, '0');
+                                return `${formattedHours}:${formattedMinutes} ${ampm}`;
                             }
                         }
                     },
@@ -235,12 +254,13 @@ function createChart(){
 
         // Function to update the chart with a new subset of data
         function updateChartData(numDataPoints) {
-            const newLabels = labels.slice(-numDataPoints);
-            const newValues = values.slice(-numDataPoints);
+            // const newLabels = labels.slice(-numDataPoints);
+            // const newValues = values.slice(-numDataPoints);
 
-            chart.data.labels = newLabels;
-            chart.data.datasets[0].data = newValues;
-            chart.update();
+            g_numberofDataPoints = numDataPoints;
+
+            fetchData();
+            chart.resetZoom();
         }
 
 // Start updating the time and fetching data every 5 seconds
