@@ -8,14 +8,10 @@ function updateTime() {
     const latestValueElement = document.getElementById('latestValue'); // Reference to the latest value div
     const latestTimeElement = document.getElementById('latestTime'); // Reference to the latest value div
 
-    if (labels)
-    {
-
-     lastReadingTime = new Date(labels[labels.length - 1]);
-    }
-    else
-    {
-         lastReadingTime = new Date();
+    if (labels) {
+        lastReadingTime = new Date(labels[labels.length - 1]);
+    } else {
+        lastReadingTime = new Date();
     }
     // Calculate time since the last reading
     const currentTime = new Date();
@@ -27,23 +23,16 @@ function updateTime() {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-
     const timeSinceLastReading = `${minutes % 60} minute${minutes % 60 !== 1 ? 's ' : ''} ${seconds % 60} second${seconds % 60 !== 1 ? 's ' : ''}`;
 
     const latestValue = String(values[values.length - 1]);
     // Update the latest value display with the time difference
-    latestValueElement.innerHTML = `
-        ${latestValue}
-    `;
-    latestTimeElement.innerHTML = `
-        ${timeSinceLastReading} ago
-    `;
-
+    latestValueElement.innerHTML = `${latestValue}`;
+    latestTimeElement.innerHTML = `${timeSinceLastReading} ago`;
 }
 
 // Function to fetch the data (already provided in your code)
 async function fetchData() {
-    
     try {
         // Fetch data from the server API using numberofDataPoints
         const response = await fetch(`/api/data?limit=${numberOfDataPoints}`);
@@ -67,7 +56,7 @@ async function fetchData() {
         }
 
         // Prepare labels and values
-        labels = data.map(item => new Date(item._datetime).toLocaleString());
+        labels = data.map(item => new Date(item._datetime));
         values = data.map(item => item._value);
 
         if (chart) {
@@ -75,25 +64,21 @@ async function fetchData() {
             chart.data.datasets[0].data = values;
             chart.update();
         }
-        return
-    }
-    catch
-    {
+        return;
+    } catch {
         console.log('Unable to fetch data');
-        return
+        return;
     }
 }
 
-function createChart(){
-    try{
-
+function createChart() {
+    try {
         const ctx = document.getElementById('dataChart').getContext('2d');
 
         // Destroy the previous chart instance if it exists
         if (chart) {
             chart.destroy();
         }
-
 
         // Create the chart
         chart = new Chart(ctx, {
@@ -104,7 +89,7 @@ function createChart(){
                     label: 'Glucose',
                     data: values,
                     borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.1
+                    tension: 0.4
                 }]
             },
             options: {
@@ -112,52 +97,14 @@ function createChart(){
                 responsive: true,
                 scales: {
                     y: {
-                        beginAtZero: true,
-                        suggestedMin: 50,
+                        beginAtZero: false,
+                        suggestedMin: 40,
                         suggestedMax: 200
                     },
                     x: {
-                        grid: {
-                            drawOnChartArea: false, // Hide grid lines for the top axis
-                        },
-                        ticks: {
-                            maxRotation: 0,
-                            minRotation: 45,
-                            callback: function(value, index) {
-                                const date = new Date(labels[index]);
-                                const hours = date.getHours();
-                                const minutes = date.getMinutes();
-                                const ampm = hours >= 12 ? 'PM' : 'AM';
-                                const formattedHours = hours % 12 || 12;
-                                const formattedMinutes = String(minutes).padStart(2, '0');
-                                return `${formattedHours}:${formattedMinutes} ${ampm}`;
-                            }
-                        }
-                    },
-                    // Second X-axis (Day)
-                    x2: {
-                        position: 'top',
-                        type: 'category',
-                        grid: {
-                            drawOnChartArea: false, // Hide grid lines for the top axis
-                        },
-                        ticks: {
-                            maxRotation: 0,
-                            minRotation: 0,
-                            callback: function(value, index, values) {
-                                const date = new Date(labels[index]); // Reference to the original labels
-                                const month = date.toLocaleString('default', { month: 'short' });
-                                const day = date.getDate();
-                                const isMidnight = date.getHours() === 0;
-
-                                // Show day label only at midnight
-                                if (isMidnight) {
-                                    const fdate = `${month} ${day}`;
-                                    return fdate;
-                                }
-                                return ''; // Hide ticks for non-midnight hours
-                            }
-                        }
+                        type: 'timeseries',
+                        min: Date.now() - 86400000, // 24 hours ago
+                        max: Date.now() // Now
                     }
                 },
 
@@ -198,38 +145,29 @@ function createChart(){
                                 enabled: true, // Enable wheel zooming
                                 speed: 0.1, // Zoom speed with mouse wheel
                                 sensitivity: 3 // Zoom sensitivity (higher value = faster zoom)
-                            },
-                            pinch: {
-                                enabled: true, // Enable pinch to zoom (for touch devices)
                             }
                         }
                     }
                 }
-
             }
-            
         });
 
-
+        setZoomLimits();
 
         // Button event listeners to change the number of data points shown
-        document.getElementById('show1hr').addEventListener('click', function() {
-            updateChartData(12);
-        });
-        document.getElementById('show6hr').addEventListener('click', function() {
-            updateChartData(72);
-        });
-        document.getElementById('show12hr').addEventListener('click', function() {
-            updateChartData(144);
-        });
-        document.getElementById('show24hr').addEventListener('click', function() {
-            updateChartData(288);
-        });
-        document.getElementById('showAll').addEventListener('click', function() {
-            updateChartData(0);
-        });
+        const buttons = {
+            show3hr: 36,
+            show6hr: 72,
+            show12hr: 144,
+            show24hr: 288,
+            showAll: 0
+        };
 
-
+        for (const [id, dataPoints] of Object.entries(buttons)) {
+            document.getElementById(id).addEventListener('click', function() {
+                updateChartData(dataPoints);
+            });
+        }
 
         // Double-click event listener to reset zoom/pan
         const chartCanvas = document.getElementById('dataChart');
@@ -245,17 +183,22 @@ function createChart(){
     }
 }
 
+// Function to set the zoom limits of the chart
+function setZoomLimits() {
+    chart.options.plugins.zoom.limits = {
+        y: { min: 'original', max: 'original' }
+    };
+    console.log('Zoom limits set');
+    console.log(chart.options.plugins.zoom.limits);
+}
 
-        // Function to update the chart with a new subset of data
-        function updateChartData(numDataPoints) {
-            // const newLabels = labels.slice(-numDataPoints);
-            // const newValues = values.slice(-numDataPoints);
+// Function to update the chart with a new subset of data
+function updateChartData(numDataPoints) {
+    numberOfDataPoints = numDataPoints;
 
-            numberOfDataPoints = numDataPoints;
-
-            fetchData();
-            chart.resetZoom();
-        }
+    fetchData();
+    chart.resetZoom();
+}
 
 // Start updating the time and fetching data every 5 seconds
 window.onload = async function() {
@@ -267,6 +210,12 @@ window.onload = async function() {
     }, 5000); // Update every 5 seconds
     setInterval(() => {
         updateTime();
-    }, 1000)
-
+    }, 1000);
 };
+
+// Resize the chart when the window is resized
+window.onresize = function() {
+    if (chart) {
+        chart.resize();
+    }
+}
