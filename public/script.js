@@ -4,6 +4,8 @@ let values;
 let lastReadingTime;
 let numberOfDataPoints = 72;
 
+
+
 function updateTime() {
     const latestValueElement = document.getElementById('latestValue'); // Reference to the latest value div
     const latestTimeElement = document.getElementById('latestTime'); // Reference to the latest value div
@@ -212,8 +214,6 @@ function setZoomLimits() {
             },
         y: { min: 'original', max: 'original' }
     };
-    console.log('Zoom limits set');
-    console.log(chart.options.plugins.zoom.limits);
 }
 
 // Function to update the chart with a new subset of data
@@ -235,6 +235,24 @@ window.onload = async function() {
     setInterval(() => {
         updateTime();
     }, 1000);
+
+    let t = document.getElementById("dark_mode_btn")
+          , d = document.getElementById("light_mode_btn");
+        localStorage.theme === "dark" || !("theme"in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches ? d.classList.remove("hidden") : t.classList.remove("hidden"),
+        t.addEventListener("click", function() {
+            document.documentElement.setAttribute("data-theme", "dark"),
+            localStorage.theme = "dark",
+            t.classList.add("hidden"),
+            d.classList.remove("hidden")
+            console.log("dark mode");
+        }),
+        d.addEventListener("click", function() {
+            document.documentElement.setAttribute("data-theme", "light"),
+            localStorage.theme = "light",
+            d.classList.add("hidden"),
+            t.classList.remove("hidden")
+            console.log("light mode");
+        });
 };
 
 // Resize the chart when the window is resized
