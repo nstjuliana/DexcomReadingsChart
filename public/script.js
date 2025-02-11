@@ -4,6 +4,9 @@ let values;
 let lastReadingTime;
 let numberOfDataPoints = 72;
 
+let maxY = 0;
+let minY = 0;
+
 
 
 function updateTime() {
@@ -60,18 +63,96 @@ async function fetchData() {
         labels = data.map(item => new Date(item._datetime));
         values = data.map(item => item._value);
 
+        //loop through labels, if the time between the current label and the previous label is greater than 5 minutes, add a new label in between with a null value
+        for (let i = 1; i < labels.length; i++) {
+            if (labels[i] - labels[i - 1] > 16 * 60 * 1000) {
+                labels.splice(i, 0, new Date(labels[i - 1].getTime() + 5 * 60 * 1000));
+                values.splice(i, 0, null);
+            }
+        }
+
         if (chart) {
             chart.data.labels = labels;
             chart.data.datasets[0].data = values;
-            chart.update();
-            setZoomLimits();
-        }
-        return;
+            
+            
+        
+
+        // switch(true) {
+        //     case numberOfDataPoints <= 36:
+        //         chart.options.scales.x.time.unit = 'minute';
+        //         chart.options.scales.x.time.displayFormats = {
+        //             minute: 'mm:ss'
+        //         };
+                
+        //         break;
+        //     case numberOfDataPoints <= 72:
+        //         chart.options.scales.x.time.unit = 'hour';
+        //         break;
+        //     case numberOfDataPoints <= 144:
+        //         chart.options.scales.x.time.unit = 'hour';
+        //         break;
+        //     case numberOfDataPoints <= 288:
+        //         chart.options.scales.x.time.unit = 'hour';
+        //         break;
+        //     case numberOfDataPoints <= 10000:
+        //         chart.options.scales.x.time.unit = 'day';
+        //         break;
+        // }
+        setZoomLimits();
+        chart.update();
+
+        
+
+        // //get chart.data.datasets[0].data with nulls removed
+        let tempvalues = chart.data.datasets[0].data.filter(value => value !== null);
+
+        // console.log(tempvalues);
+        // console.log(Math.max(...tempvalues));
+        
+        //get the max y value on the chart rounded up to the nearest 50
+        maxY = Math.ceil(Math.max(...tempvalues) / 50) * 50;
+
+        //get the min y value on the chart rounded down to the nearest 50
+        minY = Math.floor(Math.min(...tempvalues) / 50) * 50;
+    }
     } catch {
         console.log('Unable to fetch data');
         return;
     }
 }
+
+// // Function to set the correct time format for the x-axis
+// function setXAxisTimeFormat() {
+
+//     //get the # of y values VISIBLE on the chart
+    
+//     const yvals = chart.scales.y.ticks.length;
+//     const startvalue = chart.scales.x.min;
+//     console.log(yvals + " yvals");
+
+//     switch(true) {
+//         case numberOfDataPoints <= 36:
+//             chart.options.scales.x.time.unit = 'minute';
+//             chart.options.scales.x.time.displayFormats = {
+//                 minute: 'mm:ss'
+//             };
+            
+//             break;
+//         case numberOfDataPoints <= 72:
+//             chart.options.scales.x.time.unit = 'hour';
+//             break;
+//         case numberOfDataPoints <= 144:
+//             chart.options.scales.x.time.unit = 'hour';
+//             break;
+//         case numberOfDataPoints <= 288:
+//             chart.options.scales.x.time.unit = 'hour';
+//             break;
+//         case numberOfDataPoints <= 10000:
+//             chart.options.scales.x.time.unit = 'day';
+//             break;
+//     }
+// }
 
 function createChart() {
     try {
@@ -91,7 +172,8 @@ function createChart() {
                     label: 'Glucose',
                     data: values,
                     borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.4
+                    tension: 0.4,
+                    spanGaps: 1000 * 60 * 16
                 }]
             },
             options: {
@@ -107,9 +189,9 @@ function createChart() {
                         type: 'timeseries',
                         //display in hh:mm AM/PM format
                         time: { 
-                            unit: 'hour',
                             displayFormats: {
-                                hour: 'h:mm a'
+                                hour: 'h:mm a',
+                                minute: 'h:mm'
                             }
                         },
                         ticks: {
@@ -118,15 +200,15 @@ function createChart() {
                             minRotation: 0
                         }
                     },
-                    //days at the top of the chart
-                    x2: { 
-                        type: 'timeseries',
-                        display: true,
-                        position: 'top',
-                        time: {
-                            unit: 'day'
-                        },
-                    }
+                    // //days at the top of the chart
+                    // x2: { 
+                    //     type: 'timeseries',
+                    //     display: true,
+                    //     position: 'top',
+                    //     time: {
+                    //         unit: 'day'
+                    //     },
+                    // }
                 },
 
                 plugins: {
@@ -211,7 +293,7 @@ function setZoomLimits() {
               min: labels[0],  // Prevent zooming out beyond the first label
               max: labels[labels.length - 1], // Prevent zooming out beyond the last label
             },
-        y: { min: 'original', max: 'original' }
+        y: { min: minY, max: maxY }
     };
 }
 
@@ -221,6 +303,27 @@ function updateChartData(numDataPoints) {
 
     fetchData();
     chart.resetZoom();
+    // switch(true) {
+    //     case numberOfDataPoints <= 36:
+    //         chart.options.scales.x.time.unit = 'minute';
+    //         chart.options.scales.x.time.displayFormats = {
+    //             minute: 'mm:ss'
+    //         };
+            
+    //         break;
+    //     case numberOfDataPoints <= 72:
+    //         chart.options.scales.x.time.unit = 'hour';
+    //         break;
+    //     case numberOfDataPoints <= 144:
+    //         chart.options.scales.x.time.unit = 'hour';
+    //         break;
+    //     case numberOfDataPoints <= 288:
+    //         chart.options.scales.x.time.unit = 'hour';
+    //         break;
+    //     case numberOfDataPoints <= 10000:
+    //         chart.options.scales.x.time.unit = 'day';
+    //         break;
+    // }
 }
 
 // Start updating the time and fetching data every 5 seconds
