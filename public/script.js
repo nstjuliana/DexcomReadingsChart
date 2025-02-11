@@ -25,8 +25,7 @@ function updateTime() {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    const timeSinceLastReading = `${minutes % 60} minute${minutes % 60 !== 1 ? 's ' : ''} ${seconds % 60} second${seconds % 60 !== 1 ? 's ' : ''}`;
-
+    const timeSinceLastReading = `${minutes} minute${minutes % 60 !== 1 ? 's ' : ''} ${seconds % 60} second${seconds % 60 !== 1 ? 's ' : ''}`;
     const latestValue = String(values[values.length - 1]);
     // Update the latest value display with the time difference
     latestValueElement.innerHTML = `${latestValue}`;
@@ -182,7 +181,7 @@ function createChart() {
             show6hr: 72,
             show12hr: 144,
             show24hr: 288,
-            showAll: 0
+            showAll: 10000
         };
 
         for (const [id, dataPoints] of Object.entries(buttons)) {
