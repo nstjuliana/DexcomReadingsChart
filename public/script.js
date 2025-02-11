@@ -191,7 +191,7 @@ function createChart() {
                         time: { 
                             displayFormats: {
                                 hour: 'h:mm a',
-                                minute: 'h:mm'
+                                minute: 'h:mm a'
                             }
                         },
                         ticks: {
