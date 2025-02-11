@@ -33,6 +33,8 @@ function updateTime() {
     // Update the latest value display with the time difference
     latestValueElement.innerHTML = `${latestValue}`;
     latestTimeElement.innerHTML = `${timeSinceLastReading} ago`;
+
+    document.title = `Is Noah Alive? ${latestValue} mg/dL`;
 }
 
 // Function to fetch the data (already provided in your code)
@@ -99,28 +101,36 @@ async function fetchData() {
         //         chart.options.scales.x.time.unit = 'day';
         //         break;
         // }
-        setZoomLimits();
         chart.update();
-
         
-
-        // //get chart.data.datasets[0].data with nulls removed
-        let tempvalues = chart.data.datasets[0].data.filter(value => value !== null);
-
-        // console.log(tempvalues);
-        // console.log(Math.max(...tempvalues));
-        
-        //get the max y value on the chart rounded up to the nearest 50
-        maxY = Math.ceil(Math.max(...tempvalues) / 50) * 50;
-
-        //get the min y value on the chart rounded down to the nearest 50
-        minY = Math.floor(Math.min(...tempvalues) / 50) * 50;
+        setMinXMinY();
+        setZoomLimits();
     }
     } catch {
         console.log('Unable to fetch data');
         return;
     }
 }
+
+function setMinXMinY() {
+            //get chart.data.datasets[0].data with nulls removed
+            let tempvalues = chart.data.datasets[0].data.filter(value => value !== null);
+            console.log(tempvalues + " tempvalues");
+
+            console.log(Math.max(...tempvalues) + " max");
+            
+            //get the max y value on the chart rounded up to the nearest 50
+            maxY = Math.ceil(Math.max(...tempvalues) / 50) * 50;
+
+            maxY = maxY > 200 ? maxY : 200;
+    
+            //get the min y value on the chart rounded down to the nearest 50
+            minY = Math.floor(Math.min(...tempvalues) / 50) * 50;
+
+            minY = minY < 40 ? minY : 40;
+
+            console.log(minY + " " + maxY);
+}   
 
 // // Function to set the correct time format for the x-axis
 // function setXAxisTimeFormat() {
@@ -172,7 +182,7 @@ function createChart() {
                     label: 'Glucose',
                     data: values,
                     borderColor: 'rgb(75, 192, 192)',
-                    tension: 0.4,
+                    tension: 0.1,
                     spanGaps: 1000 * 60 * 16
                 }]
             },
@@ -191,7 +201,7 @@ function createChart() {
                         time: { 
                             displayFormats: {
                                 hour: 'h:mm a',
-                                minute: 'h:mm a'
+                                minute: 'h:mm'
                             }
                         },
                         ticks: {
@@ -200,15 +210,15 @@ function createChart() {
                             minRotation: 0
                         }
                     },
-                    // //days at the top of the chart
-                    // x2: { 
-                    //     type: 'timeseries',
-                    //     display: true,
-                    //     position: 'top',
-                    //     time: {
-                    //         unit: 'day'
-                    //     },
-                    // }
+                    //days at the top of the chart
+                    x2: { 
+                        type: 'timeseries',
+                        display: true,
+                        position: 'top',
+                        time: {
+                            unit: 'day'
+                        },
+                    }
                 },
 
                 plugins: {
@@ -255,6 +265,8 @@ function createChart() {
             }
         });
 
+        
+        setMinXMinY();
         setZoomLimits();
 
         // Button event listeners to change the number of data points shown
@@ -288,6 +300,20 @@ function createChart() {
 
 // Function to set the zoom limits of the chart
 function setZoomLimits() {
+    //Get the chart bounds
+    // let minX = chart.scales.x.min;
+    // let maxX = chart.scales.x.max;
+    // let minY = chart.scales.y.min;
+    // let maxY = chart.scales.y.max;
+
+    //set chart y max to maxy or 200, whichever is greater
+    // chart.scales.y.max = maxY > 200 ? maxY : 200;
+
+    // chart.scales.y.min = minY < 40 ? minY : 40;
+
+    // chart.scales.y.value = 1000;
+    
+    console.log(minY + " " + maxY);
     chart.options.plugins.zoom.limits = {
             x: {
               min: labels[0],  // Prevent zooming out beyond the first label
