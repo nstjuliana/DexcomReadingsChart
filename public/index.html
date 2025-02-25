@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glucose Monitor</title>
+    <title>Is Noah Alive?</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
@@ -14,7 +14,7 @@
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
     <div class="container mx-auto px-4 py-6 max-w-4xl">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Glucose Monitor</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-red-600 dark:text-white">Is Noah Alive?</h1>
             <button id="themeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700">
                 <span class="sun">☀️</span>
                 <span class="moon hidden">🌙</span>
@@ -23,9 +23,9 @@
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 text-gray-800 dark:text-white">
             <div class="text-center">
-                <p class="text-lg text-gray-600 dark:text-gray-300 mb-2">Latest Reading</p>
-                <div id="latestValue" class="text-4xl md:text-5xl font-bold text-blue-600 dark:text-blue-400"></div>
-                <div id="latestTime" class="text-sm text-gray-500 dark:text-gray-400 mt-2"></div>
+                <p class="text-lg font-bold text-gray-600 dark:text-gray-300 mb-2">Latest Reading</p>
+                <div id="latestValue" class="text-4xl md:text-5xl font-bold text-green-600 dark:text-green-400"></div>
+                <div id="latestTime" class="text-lg text-gray-500 dark:text-gray-400 mt-2"></div>
             </div>
         </div>
 
@@ -46,7 +46,7 @@
         let chart;
         let labels = [];
         let values = [];
-        let currentHours = 24;
+        let currentHours = 6;
         let xmax = 0;
         let xmin = 0;
 
@@ -362,34 +362,41 @@
 
             document.getElementById('latestValue').textContent = `${latestValue} mg/dL`;
             document.getElementById('latestTime').textContent = `${minutes}m ${seconds}s ago`;
-            document.title = `Glucose: ${latestValue} mg/dL`;
+            document.title = `Is Noah Alive?: ${latestValue} mg/dL`;
         }
 
         const themeToggle = document.getElementById('themeToggle');
         themeToggle.addEventListener('click', () => {
-            const isDark = !document.documentElement.classList.contains('dark');
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            themeToggle.querySelector('.sun').classList.toggle('hidden');
-            themeToggle.querySelector('.moon').classList.toggle('hidden');
+            // const isDark = !document.documentElement.classList.contains('dark');
+            // document.documentElement.classList.toggle('dark');
+            // document.body.classList.toggle('dark', isDark);
+            // document.body.classList.toggle('light', !isDark);
+            // localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            // themeToggle.querySelector('.sun').classList.toggle('hidden');
+            // themeToggle.querySelector('.moon').classList.toggle('hidden');
             
-            const scales = chart.options.scales;
-            scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.x.ticks.color = isDark ? '#d1d5db' : '#374151';
-            scales.y.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.y.ticks.color = isDark ? '#d1d5db' : '#374151';
-            scales.y.title.color = isDark ? '#d1d5db' : '#374151';
-            chart.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
-            chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
-            chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
-            chart.update();
+            // const scales = chart.options.scales;
+            // scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
+            // scales.x.ticks.color = isDark ? '#d1d5db' : '#374151';
+            // scales.y.grid.color = isDark ? '#4b5563' : '#e5e7eb';
+            // scales.y.ticks.color = isDark ? '#d1d5db' : '#374151';
+            // scales.y.title.color = isDark ? '#d1d5db' : '#374151';
+            // chart.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
+            // chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
+            // chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
+            // chart.update();
         });
 
         if (localStorage.getItem('theme') === 'dark' || 
             (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
+            document.body.classList.add('dark');
+            document.body.classList.remove('light');
             themeToggle.querySelector('.sun').classList.add('hidden');
             themeToggle.querySelector('.moon').classList.remove('hidden');
+        } else {
+            document.body.classList.add('light');
+            document.body.classList.remove('dark');
         }
 
         // Time range buttons
@@ -412,7 +419,7 @@
 
         window.onload = () => {
             createChart();
-            fetchData(24, true);
+            fetchData(6, true);
             setInterval(() => fetchData(currentHours, false), 5000);
             setInterval(updateLatestReading, 1000);
         };
@@ -421,11 +428,31 @@
     </script>
 
     <style>
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        body.dark {
+            background-color: #111827; /* dark gray-900 */
+            color: #f9fafb; /* gray-50 */
+        }
+        
+        body.light {
+            background-color: #f9fafb; /* gray-50 */
+            color: #111827; /* gray-900 */
+        }
+        h1.dark {
+            color: #f9fafb; /* gray-50 */
+        }
+        h1.light {
+            color: #111827; /* gray-900 */
+        }
+        
         #glucoseChart {
             height: calc(50vh) !important;
             min-height: 300px;
             width: 100% !important;
-            touch-action: none !important; /* Changed from pan-y to none */
+            touch-action: none !important;
             cursor: grab;
         }
         
