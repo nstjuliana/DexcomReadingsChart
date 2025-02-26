@@ -305,16 +305,15 @@
                 
                 if (!result.success) throw new Error('Data fetch failed');
                 
-                // Store current zoom state if we're not resetting
-                let currentMin, currentMax;
-                if (!reset && chart) {
-                    currentMin = chart.scales.x.min;
-                    currentMax = chart.scales.x.max;
-                }
-                
                 const data = result.data;
-                labels = data.map(item => new Date(item._datetime));
-                values = data.map(item => item._value);
+                const newLabels = data.map(item => new Date(item._datetime));
+                const newValues = data.map(item => item._value);
+
+                // Check if we have new data points
+                const hasNewData = newLabels.length > labels.length;
+                
+                labels = newLabels;
+                values = newValues;
 
                 chart.data.labels = labels;
                 chart.data.datasets[0].data = values.map((value, index) => ({
@@ -322,29 +321,12 @@
                     y: value
                 })).filter(point => point.y !== null && point.y !== undefined);
 
-                
-                
-                // Set zoom limits after updating data
-                if (reset) {
+                // Reset zoom if there are new points or if reset is true
+                if (hasNewData || reset) {
                     await setZoomLimits();
-                } else if (currentMin && currentMax) {
-                    // Update limits but preserve current view
-                    const dataPoints = chart.data.datasets[0].data;
-                    if (dataPoints.length > 0) {
-                        const xValues = dataPoints.map(point => point.x instanceof Date ? point.x.getTime() : point.x);
-                        const minX = Math.min(...xValues);
-                        const maxX = Math.max(...xValues);
-                        
-                        chart.options.plugins.zoom.limits.x.min = minX;
-                        chart.options.plugins.zoom.limits.x.max = maxX;
-                        
-                        // Restore previous zoom state
-                        chart.zoomScale('x', {min: currentMin, max: currentMax}, 'none');
-                    }
                 }
                 
                 console.log(`Chart updated with ${chart.data.datasets[0].data.length} data points`);
-                // chart.update('none'); // Use 'none' animation mode to prevent flickering
                 updateLatestReading();
                 determineTimeUnit(chart);
             } catch (error) {
@@ -425,6 +407,26 @@
         };
 
         window.onresize = () => chart?.resize();
+
+        // Add new data point on 'n' key press
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'n') {
+                const latestTime = labels[labels.length - 1];
+                const fiveMinutesLater = new Date(latestTime.getTime() + 5 * 60 * 1000);
+                const mockValue = Math.floor(Math.random() * (180 - 70 + 1)) + 70; // Random value between 70-180
+                
+                labels.push(fiveMinutesLater);
+                values.push(mockValue);
+                
+                chart.data.datasets[0].data.push({
+                    x: latestTime,
+                    y: mockValue
+                });
+                
+                setZoomLimits();
+                updateLatestReading();
+            }
+        });
     </script>
 
     <style>
