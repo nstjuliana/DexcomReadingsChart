@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Is Noah Alive?</title>
     <br>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -363,12 +363,9 @@
             document.title = `Is Noah Alive?: ${latestValue} mg/dL`;
         }
 
-themeToggle.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    themeToggle.querySelector('.sun').classList.toggle('hidden', isDark);
-    themeToggle.querySelector('.moon').classList.toggle('hidden', !isDark);
-    const scales = chart.options.scales;
+        function updateChartTheme(){
+            const isDark = localStorage.getItem('theme');
+            const scales = chart.options.scales;
             scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
             scales.x.ticks.color = isDark ? '#d1d5db' : '#374151';
             scales.y.grid.color = isDark ? '#4b5563' : '#e5e7eb';
@@ -378,6 +375,15 @@ themeToggle.addEventListener('click', () => {
             chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
             chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
             chart.update();
+
+        }
+
+themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    themeToggle.querySelector('.sun').classList.toggle('hidden', isDark);
+    themeToggle.querySelector('.moon').classList.toggle('hidden', !isDark);
+    updateChartTheme();
 });
 
 
@@ -411,6 +417,8 @@ themeToggle.addEventListener('click', () => {
                 themeToggle.querySelector('.sun').classList.add('hidden');
                 themeToggle.querySelector('.moon').classList.remove('hidden');
         }
+        
+    updateChartTheme();
         
         };
 
