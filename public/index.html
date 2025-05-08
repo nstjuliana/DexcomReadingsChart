@@ -24,7 +24,7 @@
         <!-- Is Noah Alive? + Dark Mode Toggle -->
         <div class="flex justify-between items-center ">
             <h1 class="text-2xl md:text-3xl font-bold text-black-600 dark:text-white">Is Noah Alive?</h1>
-            <button id="themeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700">
+            <button id="themeToggle" class="p-2 rounded-full border-2 hover:bg-gray-100 dark:hover:bg-slate-900 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
                 <span class="sun">☀️</span>
                 <span class="moon hidden">🌙</span>
             </button>
@@ -367,10 +367,10 @@
             const isDark = localStorage.getItem('theme');
             const scales = chart.options.scales;
             scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.x.ticks.color = isDark ? '#d1d5db' : '#374151';
+            scales.x.ticks.color = isDark ? '#282828' : '#374151';
             scales.y.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.y.ticks.color = isDark ? '#d1d5db' : '#374151';
-            scales.y.title.color = isDark ? '#d1d5db' : '#374151';
+            scales.y.ticks.color = isDark ? '#282828' : '#374151';
+            scales.y.title.color = isDark ? '#282828' : '#374151';
             chart.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
             chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
             chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
