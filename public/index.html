@@ -455,6 +455,7 @@ themeToggle.addEventListener('click', () => {
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         
+        /* Chart on large screens */
         #glucoseChart {
             height: calc(50vh) !important;
             min-height: 300px;
@@ -467,6 +468,7 @@ themeToggle.addEventListener('click', () => {
             cursor: grabbing;
         }
         
+        /* Chart on small screens */
         @media (max-width: 640px) {
             #glucoseChart {
                 height: calc(30vh) !important;
@@ -492,11 +494,12 @@ themeToggle.addEventListener('click', () => {
             background-color: #1d4ed8;
         }
 
+        /* Prevent scrolling, double tap zoom, pinch to zoom on mobile */
         html, body {
         overflow: hidden;
         height: 100%;
         touch-action: none; /* Prevents gestures like pinch/scroll */
-}
+        }
 
     </style>
 </body>
