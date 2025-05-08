@@ -492,9 +492,11 @@ themeToggle.addEventListener('click', () => {
             background-color: #1d4ed8;
         }
 
-        html { 
-            touch-action: manipulation;
-        }
+        html, body {
+        overflow: hidden;
+        height: 100%;
+        touch-action: none; /* Prevents gestures like pinch/scroll */
+}
 
     </style>
 </body>
