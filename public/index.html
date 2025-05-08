@@ -380,17 +380,6 @@ themeToggle.addEventListener('click', () => {
             chart.update();
 });
 
-        if (localStorage.getItem('theme') === 'dark' || 
-            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.body.classList.add('dark');
-            document.body.classList.remove('light');
-            themeToggle.querySelector('.sun').classList.add('hidden');
-            themeToggle.querySelector('.moon').classList.remove('hidden');
-        } else {
-            document.body.classList.add('light');
-            document.body.classList.remove('dark');
-        }
 
         // Time range buttons
         document.querySelectorAll('.time-btn').forEach(btn => {
@@ -415,11 +404,37 @@ themeToggle.addEventListener('click', () => {
             fetchData(6, true);
             setInterval(() => fetchData(currentHours, false), 5000);
             setInterval(updateLatestReading, 1000);
+
+            if (localStorage.getItem('theme') === 'dark' || 
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.toggle('dark');
+                themeToggle.querySelector('.sun').classList.add('hidden');
+                themeToggle.querySelector('.moon').classList.remove('hidden');
+        }
+        
         };
 
         window.onresize = () => chart?.resize();
 
-
+        // // Add new data point on 'n' key press
+        // document.addEventListener('keydown', (e) => {
+        //     if (e.key.toLowerCase() === 'n') {
+        //         const latestTime = labels[labels.length - 1];
+        //         const fiveMinutesLater = new Date(latestTime.getTime() + 5 * 60 * 1000);
+        //         const mockValue = Math.floor(Math.random() * (180 - 70 + 1)) + 70; // Random value between 70-180
+                
+        //         labels.push(fiveMinutesLater);
+        //         values.push(mockValue);
+                
+        //         chart.data.datasets[0].data.push({
+        //             x: latestTime,
+        //             y: mockValue
+        //         });
+                
+        //         setZoomLimits();
+        //         updateLatestReading();
+        //     }
+        // });
     </script>
 
     <style>
