@@ -364,13 +364,18 @@
         }
 
         function updateChartTheme(){
-            const isDark = localStorage.getItem('theme');
+            // Update chart theme based on localStorage or system preference
+            const isDark = localStorage.getItem('theme') === 'dark' || 
+            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            console.log("Updating chart theme to", isDark);
+
+            // Update chart options based on theme. Left = Dark, Right = Light
             const scales = chart.options.scales;
             scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.x.ticks.color = isDark ? '#282828' : '#374151';
+            scales.x.ticks.color = isDark ? '#cfcfcf' : '#3b3b3b';
             scales.y.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.y.ticks.color = isDark ? '#282828' : '#374151';
-            scales.y.title.color = isDark ? '#282828' : '#374151';
+            scales.y.ticks.color = isDark ? '#cfcfcf' : '#3b3b3b';
+            scales.y.title.color = isDark ? '#cfcfcf' : '#3b3b3b';
             chart.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
             chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
             chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
@@ -421,8 +426,6 @@ themeToggle.addEventListener('click', () => {
     updateChartTheme();
         
         };
-
-        
 
         window.onresize = () => chart?.resize();
 
@@ -488,10 +491,6 @@ themeToggle.addEventListener('click', () => {
         .time-btn.active {
             background-color: #1d4ed8;
         }
-
-        button, a {
-  touch-action: manipulation;
-}
     </style>
 </body>
 </html>
