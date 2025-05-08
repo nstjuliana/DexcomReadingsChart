@@ -422,6 +422,8 @@ themeToggle.addEventListener('click', () => {
         
         };
 
+        
+
         window.onresize = () => chart?.resize();
 
         // // Add new data point on 'n' key press
@@ -486,6 +488,10 @@ themeToggle.addEventListener('click', () => {
         .time-btn.active {
             background-color: #1d4ed8;
         }
+
+        button, a {
+  touch-action: manipulation;
+}
     </style>
 </body>
 </html>
