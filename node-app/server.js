@@ -7,6 +7,7 @@ const port = process.env.PORT; // Default port 3000
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.DB_NAME;
 const collectionName = process.env.COLLECTION_NAME;
+const tls = process.env.MONGODB_TLS === 'false'; // Use TLS if specified in environment variables
 
 // Initialize MongoDB client globally and maintain persistent connection
 let client;
@@ -19,7 +20,7 @@ async function connectToMongoDB() {
             client = new MongoClient(uri, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
-                tls: false,
+                tls: tls,
                 serverSelectionTimeoutMS: 3000
             });
 

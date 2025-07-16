@@ -16,7 +16,7 @@
         tailwind.config = {
           darkMode: 'class'
         };
-      </script>
+    </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
 
@@ -54,7 +54,6 @@
             <button class="time-btn bg-blue-500 dark:bg-slate-600 hover:bg-blue-600 dark:hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition duration-200" data-hours="all">All</button>
         </div>
 
-        
         <!-- Glucose Chart -->
         <div class="bg-white shadow-lg rounded dark:bg-gray-800 rounded-lg shadow-lg p-4">
             <canvas id="glucoseChart"></canvas>
@@ -66,8 +65,6 @@
         let labels = [];
         let values = [];
         let currentHours = 6;
-        let xmax = 0;
-        let xmin = 0;
         let websiteName;
         let websiteDescription;
 
@@ -95,7 +92,6 @@
         websiteName = localStorage.getItem('WEBSITE_NAME') || 'Dexcom Readings Chart';
         websiteDescription = localStorage.getItem('WEBSITE_DESCRIPTION');
 
-        // Set website name and description in DOM
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('websiteName').textContent = websiteName;
             document.getElementById('websiteDescription').textContent = websiteDescription;
@@ -105,20 +101,26 @@
         });
 
         function determineTimeUnit(chart) {
+            // Calculate the visible range from the x-axis scale
+            const xScale = chart.scales.x;
+            const xmax = xScale.max; // Current maximum timestamp on the x-axis
+            const xmin = xScale.min; // Current minimum timestamp on the x-axis
+
             const range = xmax - xmin;
             const hourInMs = 60 * 60 * 1000;
             console.log("Determining time unit for range:", range / hourInMs);
 
             const settings = [
-                { maxRange: 1 * hourInMs, unit: 'minute', stepSize: 5 },
-                { maxRange: 3 * hourInMs, unit: 'minute', stepSize: 15 },
-                { maxRange: 6 * hourInMs, unit: 'minute', stepSize: 30 },
-                { maxRange: 12 * hourInMs, unit: 'hour', stepSize: 1 },
-                { maxRange: 24 * hourInMs, unit: 'hour', stepSize: 2 },
-                { maxRange: 48 * hourInMs, unit: 'hour', stepSize: 4 },
-                { maxRange: 96 * hourInMs, unit: 'hour', stepSize: 6 },
-                { maxRange: 192 * hourInMs, unit: 'hour', stepSize: 12 },
-                { maxRange: Infinity, unit: 'day', stepSize: undefined }
+                { maxRange: 1 * hourInMs, unit: 'minute', stepSize: 5 }, // 1 hour
+                { maxRange: 2 * hourInMs, unit: 'minute', stepSize: 10 }, // 2 hours
+                { maxRange: 3 * hourInMs, unit: 'minute', stepSize: 15 }, // 3 hours
+                { maxRange: 6 * hourInMs, unit: 'minute', stepSize: 30 }, // 6 hours
+                { maxRange: 12 * hourInMs, unit: 'hour', stepSize: 1 }, // 12 hours
+                { maxRange: 24 * hourInMs, unit: 'hour', stepSize: 2 }, // 24 hours
+                { maxRange: 48 * hourInMs, unit: 'hour', stepSize: 4 }, // 48 hours
+                { maxRange: 96 * hourInMs, unit: 'hour', stepSize: 6 }, // 96 hours
+                { maxRange: 192 * hourInMs, unit: 'hour', stepSize: 12 }, // 192 hours
+                { maxRange: Infinity, unit: 'day', stepSize: undefined } // More than 192 hours
             ];
 
             const { unit, stepSize } = settings.find(s => range <= s.maxRange) || settings[settings.length - 1];
@@ -129,23 +131,15 @@
         }
 
         function setZoomLimits() {
-            if (!chart) return;
-            
-            // Get the min and max dates from the current dataset
-            const dataPoints = chart.data.datasets[0].data;
-            if (dataPoints.length === 0) return;
-            
-            // Find min and max x values in the current dataset
-            const xValues = dataPoints.map(point => point.x instanceof Date ? point.x.getTime() : point.x);
-            const minX = Math.min(...xValues);
-            const maxX = Math.max(...xValues);
-            
-            // Set the zoom limits to match the current data range
-            chart.options.plugins.zoom.limits.x.min = minX;
-            chart.options.plugins.zoom.limits.x.max = maxX;
-            
-            // Reset zoom to show the full range
+            if (!chart || !chart.data.datasets[0].data.length) return;
+            const xValues = chart.data.datasets[0].data.map(point => point.x.getTime());
+            chart.options.plugins.zoom.limits.x = {
+                min: Math.min(...xValues),
+                max: Math.max(...xValues)
+            };
             chart.resetZoom();
+            // Update time unit after resetting zoom
+            determineTimeUnit(chart);
         }
 
         function createChart() {
@@ -162,21 +156,21 @@
                         data: values.map((value, index) => ({
                             x: labels[index],
                             y: value
-                        })).filter(point => point.y !== null && point.y !== undefined), // Filter out null/undefined values
+                        })).filter(point => point.y !== null && point.y !== undefined),
                         borderColor: '#3b82f6',
                         fill: true,
                         tension: 0.3,
                         pointRadius: 2,
-                        spanGaps: false, // Ensures no lines or fill are drawn across gaps
+                        spanGaps: false,
                         showLine: true,
                         segment: {
                             borderColor: (ctx) => {
                                 const prev = ctx.p0DataIndex !== null ? ctx.chart.data.datasets[0].data[ctx.p0DataIndex] : null;
                                 const curr = ctx.p1DataIndex !== null ? ctx.chart.data.datasets[0].data[ctx.p1DataIndex] : null;
-                                if (prev && curr && labels[ctx.p1DataIndex] - labels[ctx.p0DataIndex] > 16 * 60 * 1000) { // 16 minutes gap
-                                    return 'transparent'; // No line for large gaps
+                                if (prev && curr && labels[ctx.p1DataIndex] - labels[ctx.p0DataIndex] > 16 * 60 * 1000) {
+                                    return 'transparent';
                                 }
-                                return '#3b82f6'; // Solid blue line for small gaps or continuous data
+                                return '#3b82f6';
                             }
                         }
                     }]
@@ -195,7 +189,8 @@
                                 }
                             },
                             grid: { 
-                                color: isDark ? '#4b5563' : '#e5e7eb'
+                                color: isDark ? '#4b5563' : '#e5e7eb',
+                                drawOnChartArea: true
                             },
                             ticks: {
                                 color: isDark ? '#d1d5db' : '#374151',
@@ -205,14 +200,12 @@
                                 includeBounds: true
                             },
                             min: function() {
-                                // Ensure the first data point is included
                                 if (labels.length > 0) {
                                     return labels[0].getTime();
                                 }
                                 return null;
                             },
                             max: function() {
-                                // Ensure the last data point is included
                                 if (labels.length > 0) {
                                     return labels[labels.length - 1].getTime();
                                 }
@@ -255,7 +248,7 @@
                             pan: {
                                 enabled: true,
                                 mode: 'x',
-                                threshold: 5,
+                                threshold: 0,
                                 modifierKey: null
                             },
                             zoom: {
@@ -268,10 +261,7 @@
                                 },
                                 mode: 'x',
                                 onZoomComplete: function() {
-                                    // Optional callback when zoom completes
-                                    xmax = chart.scales.x.max;
-                                    xmin = chart.scales.x.min;
-                                    determineTimeUnit(chart);
+                                    // determineTimeUnit(chart);
                                 }
                             }
                         },
@@ -294,7 +284,7 @@
                                     borderDash: [5, 5]
                                 }
                             }
-                        }
+                        },
                     },
                     interaction: {
                         mode: 'nearest',
@@ -302,12 +292,12 @@
                     }
                 }
             });
-            
+
             chart.resetZoom();
             chart.canvas.addEventListener('mousedown', function() {
                 console.log('Canvas mousedown');
             });
-            
+
             chart.canvas.addEventListener('touchstart', function() {
                 console.log('Canvas touchstart');
             });
@@ -315,10 +305,10 @@
             chart.canvas.addEventListener('dblclick', function() {
                 if (chart) {
                     chart.resetZoom();
+                    determineTimeUnit(chart);
                 }
             });
-            
-            // Run determineTimeUnit after chart creation
+
             // determineTimeUnit(chart);
         }
 
@@ -335,7 +325,6 @@
                 const newLabels = data.map(item => new Date(item._datetime));
                 const newValues = data.map(item => item._value);
 
-                // Check if we have new data points
                 const hasNewData = newLabels.length > labels.length;
                 
                 labels = newLabels;
@@ -347,7 +336,6 @@
                     y: value
                 })).filter(point => point.y !== null && point.y !== undefined);
 
-                // Reset zoom if there are new points or if reset is true
                 if (hasNewData || reset) {
                     await setZoomLimits();
                 }
@@ -377,12 +365,10 @@
         }
 
         function updateChartTheme(){
-            // Update chart theme based on localStorage or system preference
             const isDark = localStorage.getItem('theme') === 'dark' || 
             (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
             console.log("Updating chart theme to", isDark);
 
-            // Update chart options based on theme. Left = Dark, Right = Light
             const scales = chart.options.scales;
             scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
             scales.x.ticks.color = isDark ? '#cfcfcf' : '#3b3b3b';
@@ -392,26 +378,22 @@
             chart.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
             chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
             chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
-            chart.update();
-
+            chart.update('none');
         }
 
-themeToggle.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    themeToggle.querySelector('.sun').classList.toggle('hidden', isDark);
-    themeToggle.querySelector('.moon').classList.toggle('hidden', !isDark);
-    updateChartTheme();
-});
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggle.querySelector('.sun').classList.toggle('hidden', isDark);
+            themeToggle.querySelector('.moon').classList.toggle('hidden', !isDark);
+            updateChartTheme();
+        });
 
-
-        // Time range buttons
         document.querySelectorAll('.time-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentHours = btn.dataset.hours;
                 fetchData(currentHours, true);
                 
-                // Update active button styling
                 document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 console.log(`Changing to ${currentHours} hours view`);
@@ -425,6 +407,9 @@ themeToggle.addEventListener('click', () => {
             setInterval(() => fetchData(currentHours, false), 5000);
             setInterval(updateLatestReading, 1000);
 
+            //Set 6 hour to active button
+            document.querySelector('.time-btn[data-hours="6"]').classList.add('active');
+
             const isDark = localStorage.getItem('theme') === 'dark' ||
                 (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
             if (isDark) {
@@ -435,26 +420,6 @@ themeToggle.addEventListener('click', () => {
         };
 
         window.onresize = () => chart?.resize();
-
-        // // Add new data point on 'n' key press
-        // document.addEventListener('keydown', (e) => {
-        //     if (e.key.toLowerCase() === 'n') {
-        //         const latestTime = labels[labels.length - 1];
-        //         const fiveMinutesLater = new Date(latestTime.getTime() + 5 * 60 * 1000);
-        //         const mockValue = Math.floor(Math.random() * (180 - 70 + 1)) + 70; // Random value between 70-180
-                
-        //         labels.push(fiveMinutesLater);
-        //         values.push(mockValue);
-                
-        //         chart.data.datasets[0].data.push({
-        //             x: latestTime,
-        //             y: mockValue
-        //         });
-                
-        //         setZoomLimits();
-        //         updateLatestReading();
-        //     }
-        // });
     </script>
 
     <style>
@@ -462,7 +427,6 @@ themeToggle.addEventListener('click', () => {
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         
-        /* Chart on large screens */
         #glucoseChart {
             height: calc(50vh) !important;
             min-height: 300px;
@@ -475,7 +439,6 @@ themeToggle.addEventListener('click', () => {
             cursor: grabbing;
         }
         
-        /* Chart on small screens */
         @media (max-width: 640px) {
             #glucoseChart {
                 height: calc(35vh) !important;
@@ -487,7 +450,7 @@ themeToggle.addEventListener('click', () => {
             width: 100%;
             max-width: 100%;
             padding: 0;
-            overflow: hidden; /* Prevent scrollbars during panning */
+            overflow: hidden;
         }
         
         .container {
@@ -501,32 +464,30 @@ themeToggle.addEventListener('click', () => {
             background-color: #1d4ed8;
         }
 
-        /* Prevent scrolling, double tap zoom, pinch to zoom on mobile */
         html, body {
-        overflow: hidden;
-        height: 100%;
-        touch-action: none; /* Prevents gestures like pinch/scroll */
+            overflow: hidden;
+            height: 100%;
+            touch-action: none;
         }
 
         .time-btn {
-            background-color: #3b82f6; /* bg-blue-500 */
+            background-color: #3b82f6;
         }
         .time-btn:hover {
-            background-color: #2563eb; /* bg-blue-600 */
+            background-color: #2563eb;
         }
         .time-btn.active {
-            background-color: #1d4ed8; /* bg-blue-700 */
+            background-color: #1d4ed8;
         }
         .dark .time-btn {
-            background-color: #475569; /* bg-slate-600 */
+            background-color: #475569;
         }
         .dark .time-btn:hover {
-            background-color: #1e293b; /* bg-slate-800 */
+            background-color: #1e293b;
         }
         .dark .time-btn.active {
-            background-color: #1d4ed8; /* bg-blue-700 */
+            background-color: #1d4ed8;
         }
-
     </style>
 </body>
 </html>
