@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const path = require('path');
@@ -20,7 +19,7 @@ async function connectToMongoDB() {
             client = new MongoClient(uri, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
-                tls: true,
+                tls: false,
                 serverSelectionTimeoutMS: 3000
             });
 
@@ -77,6 +76,18 @@ app.get('/api/data', async (req, res) => {
             details: 'Error fetching data from MongoDB'
         });
     }
+});
+
+// Endpoint to check server status
+app.get('/api/status', (req, res) => {
+    res.json({ success: true, message: 'Server is running' });
+});
+
+app.get('/config', (req, res) => {
+  res.json({
+    websiteName: process.env.WEBSITE_NAME || 'Dexcom Readings Chart',
+    websiteDescription: process.env.WEBSITE_DESCRIPTION || ''
+  });
 });
 
 // Start the server

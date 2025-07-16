@@ -1,0 +1,3 @@
+pydexcom
+pymongo
+python-dotenv

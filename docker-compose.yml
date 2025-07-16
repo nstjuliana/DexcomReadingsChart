@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  data-service:
+    build: .
+    depends_on:
+      - mongo
+    volumes:
+      - .:/app
+    command: python dexcom.py
+    environment:
+      - DEXCOM_USERNAME=${DEXCOM_USERNAME}
+      - DEXCOM_PASSWORD=${DEXCOM_PASSWORD}
+      - MONGODB_URI=${MONGODB_URI}
+
+
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    logging:
+      driver: "none"
+
+  web-service:
+    build:
+      context: ./node-app
+    depends_on:
+      - mongo
+    ports:
+      - "3000:3000"  # or whatever port your Node app uses
+    volumes:
+      - ./node-app:/usr/src/app
+      - /usr/src/app/node_modules  # ← this preserves node_modules inside the container
+    environment:
+      - PORT=${PORT}
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME}
+      - COLLECTION_NAME=${COLLECTION_NAME}
+      - WEBSITE_NAME=${WEBSITE_NAME}
+      - WEBSITE_DESCRIPTION=${WEBSITE_DESCRIPTION}
+
+volumes:
+  mongo-data:

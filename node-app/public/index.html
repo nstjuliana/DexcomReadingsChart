@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Is Noah Alive?</title>
+    <title>${websiteName}</title>
     <br>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
@@ -21,17 +21,19 @@
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
 
     <div class="container mx-auto px-4 max-w-4xl">
-        <!-- Is Noah Alive? + Dark Mode Toggle -->
+        <!-- Website Title + Dark Mode Toggle -->
         <div class="flex justify-between items-center ">
-            <h1 class="text-2xl md:text-3xl font-bold text-black-600 dark:text-white">Is Noah Alive?</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-black-600 dark:text-white">
+                <span id="websiteName"></span>
+            </h1>
             <button id="themeToggle" class="p-2 rounded-full border-2 hover:bg-gray-100 dark:hover:bg-slate-900 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
                 <span class="sun">☀️</span>
                 <span class="moon hidden">🌙</span>
             </button>
         </div>
-        <!-- "Probably" -->
+        <!-- Website Description -->
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-med md:text-small font-bold text-green-500 dark:text-zinc-400"><i>"Probably"</i></h2>
+            <h2 class="text-med md:text-small font-bold text-green-500 dark:text-zinc-400"><i><span id="websiteDescription"></span></i></h2>
         </div>
         
         <!-- Latest Reading Box -->
@@ -52,6 +54,7 @@
             <button class="time-btn bg-blue-500 dark:bg-slate-600 hover:bg-blue-600 dark:hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition duration-200" data-hours="all">All</button>
         </div>
 
+        
         <!-- Glucose Chart -->
         <div class="bg-white shadow-lg rounded dark:bg-gray-800 rounded-lg shadow-lg p-4">
             <canvas id="glucoseChart"></canvas>
@@ -65,56 +68,63 @@
         let currentHours = 6;
         let xmax = 0;
         let xmin = 0;
+        let websiteName;
+        let websiteDescription;
+
+        fetch('/config')
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch config');
+                return res.json();
+            })
+            .then(config => {
+                websiteName = config.websiteName || 'Dexcom Readings Chart';
+                websiteDescription = config.websiteDescription || 'A chart displaying your Dexcom glucose readings over time.';
+                localStorage.setItem('WEBSITE_NAME', websiteName);
+                localStorage.setItem('WEBSITE_DESCRIPTION', websiteDescription);
+                document.getElementById('websiteName').textContent = websiteName;
+                document.getElementById('websiteDescription').textContent = websiteDescription;
+            })
+            .catch(error => {
+                console.error('Config fetch error:', error);
+                websiteName = localStorage.getItem('WEBSITE_NAME') || 'Dexcom Readings Chart';
+                websiteDescription = localStorage.getItem('WEBSITE_DESCRIPTION') || 'A chart displaying your Dexcom glucose readings over time.';
+                document.getElementById('websiteName').textContent = websiteName;
+                document.getElementById('websiteDescription').textContent = websiteDescription;
+            });
+
+        websiteName = localStorage.getItem('WEBSITE_NAME') || 'Dexcom Readings Chart';
+        websiteDescription = localStorage.getItem('WEBSITE_DESCRIPTION');
+
+        // Set website name and description in DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('websiteName').textContent = websiteName;
+            document.getElementById('websiteDescription').textContent = websiteDescription;
+            if(websiteName && latestValue) {
+                document.title = `${websiteName}:`;
+            }
+        });
 
         function determineTimeUnit(chart) {
             const range = xmax - xmin;
             const hourInMs = 60 * 60 * 1000;
-            
-            console.log("Determining time unit for range:", range/hourInMs);
-            if (range < hourInMs) {
-                chart.options.scales.x.time.unit = 'minute';
-                chart.options.scales.x.ticks.stepSize = 5;
-                console.log("Time unit set to minute. Range below 1 hour");
-            } 
-            else if (range >= 1 * hourInMs && range <= 3 * hourInMs) {
-                chart.options.scales.x.time.unit = 'minute';
-                chart.options.scales.x.ticks.stepSize = 15;
-                console.log("Time unit set to half hour. Range between 3 and 6 hours");
-            }
-            else if (range >= 3 * hourInMs && range <= 6 * hourInMs) {
-                chart.options.scales.x.time.unit = 'minute';
-                chart.options.scales.x.ticks.stepSize = 30;
-                console.log("Time unit set to half hour. Range between 3 and 6 hours");
-            }
-            else if (range >= 6 * hourInMs && range <= 12 * hourInMs) {
-                chart.options.scales.x.time.unit = 'hour';
-                chart.options.scales.x.ticks.stepSize = 1;
-                console.log("Time unit set to hour. Range between 6 and 12 hours");
-            }
-            else if (range >= 12 * hourInMs && range <= 24 * hourInMs) {
-                chart.options.scales.x.time.unit = 'hour';
-                chart.options.scales.x.ticks.stepSize = 2;
-                console.log("Time unit set to 2 hour. Range between 12 and 24 hours");
-            }
-            else if (range >= 24 * hourInMs && range <= 48 * hourInMs) {
-                chart.options.scales.x.time.unit = 'hour';
-                chart.options.scales.x.ticks.stepSize = 4;
-                console.log("Time unit set to 6 hour. Range between 24 and 48 hours");
-            }
-            else if (range >= 48 * hourInMs && range <= 96 * hourInMs) {
-                chart.options.scales.x.time.unit = 'hour';
-                chart.options.scales.x.ticks.stepSize = 6;
-                console.log("Time unit set to 12 hour. Range between 48 and 96 hours");
-            }
-            else if (range >= 96 * hourInMs && range <= 192 * hourInMs) {
-                chart.options.scales.x.time.unit = 'hour';
-                chart.options.scales.x.ticks.stepSize = 12;
-                console.log("Time unit set to 12 hour. Range between 96 and 192 hours");
-            } else {
-                chart.options.scales.x.time.unit = 'day';
-                chart.options.scales.x.ticks.stepSize = undefined;
-                console.log("Time unit set to day. Range above 48 hours");
-            }
+            console.log("Determining time unit for range:", range / hourInMs);
+
+            const settings = [
+                { maxRange: 1 * hourInMs, unit: 'minute', stepSize: 5 },
+                { maxRange: 3 * hourInMs, unit: 'minute', stepSize: 15 },
+                { maxRange: 6 * hourInMs, unit: 'minute', stepSize: 30 },
+                { maxRange: 12 * hourInMs, unit: 'hour', stepSize: 1 },
+                { maxRange: 24 * hourInMs, unit: 'hour', stepSize: 2 },
+                { maxRange: 48 * hourInMs, unit: 'hour', stepSize: 4 },
+                { maxRange: 96 * hourInMs, unit: 'hour', stepSize: 6 },
+                { maxRange: 192 * hourInMs, unit: 'hour', stepSize: 12 },
+                { maxRange: Infinity, unit: 'day', stepSize: undefined }
+            ];
+
+            const { unit, stepSize } = settings.find(s => range <= s.maxRange) || settings[settings.length - 1];
+            chart.options.scales.x.time.unit = unit;
+            chart.options.scales.x.ticks.stepSize = stepSize;
+            console.log(`Time unit set to ${unit}${stepSize ? ` with step ${stepSize}` : ''}`);
             chart.update('none');
         }
 
@@ -351,6 +361,7 @@
         }
 
         function updateLatestReading() {
+            if (values.length === 0 || labels.length === 0) return;
             const latestValue = values[values.length - 1];
             const latestTime = new Date(labels[labels.length - 1]);
             const now = new Date();
@@ -360,7 +371,9 @@
 
             document.getElementById('latestValue').textContent = `${latestValue} mg/dL`;
             document.getElementById('latestTime').textContent = `${minutes}m ${seconds}s ago`;
-            document.title = `Is Noah Alive?: ${latestValue} mg/dL`;
+            if (websiteName && latestValue !== undefined) {
+                document.title = `${websiteName}: ${latestValue} mg/dL`;
+            }
         }
 
         function updateChartTheme(){
@@ -399,32 +412,26 @@ themeToggle.addEventListener('click', () => {
                 fetchData(currentHours, true);
                 
                 // Update active button styling
-                document.querySelectorAll('.time-btn').forEach(b => {
-                    b.classList.remove('bg-blue-700');
-                    b.classList.add('bg-blue-500');
-                });
-                btn.classList.remove('bg-blue-500');
-                btn.classList.add('bg-blue-700');
-                
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
                 console.log(`Changing to ${currentHours} hours view`);
             });
         });
 
-        window.onload = () => {
+        window.onload = async () => {
             createChart();
-            fetchData(6, true);
+            await fetchData(6, true);
+            updateChartTheme();
             setInterval(() => fetchData(currentHours, false), 5000);
             setInterval(updateLatestReading, 1000);
 
-            if (localStorage.getItem('theme') === 'dark' || 
-            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.toggle('dark');
+            const isDark = localStorage.getItem('theme') === 'dark' ||
+                (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) {
+                document.documentElement.classList.add('dark');
                 themeToggle.querySelector('.sun').classList.add('hidden');
                 themeToggle.querySelector('.moon').classList.remove('hidden');
-        }
-        
-    updateChartTheme();
-        
+            }
         };
 
         window.onresize = () => chart?.resize();
@@ -499,6 +506,25 @@ themeToggle.addEventListener('click', () => {
         overflow: hidden;
         height: 100%;
         touch-action: none; /* Prevents gestures like pinch/scroll */
+        }
+
+        .time-btn {
+            background-color: #3b82f6; /* bg-blue-500 */
+        }
+        .time-btn:hover {
+            background-color: #2563eb; /* bg-blue-600 */
+        }
+        .time-btn.active {
+            background-color: #1d4ed8; /* bg-blue-700 */
+        }
+        .dark .time-btn {
+            background-color: #475569; /* bg-slate-600 */
+        }
+        .dark .time-btn:hover {
+            background-color: #1e293b; /* bg-slate-800 */
+        }
+        .dark .time-btn.active {
+            background-color: #1d4ed8; /* bg-blue-700 */
         }
 
     </style>

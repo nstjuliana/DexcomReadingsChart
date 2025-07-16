@@ -1,10 +1,9 @@
 {
-  "name": "is-noah-alive",
+  "name": "dexcom-readings-chart",
   "version": "1.0.0",
-  "description": "Is Noah Alive?",
+  "description": "Dexcom Readings Chart",
   "main": "server.js",
   "dependencies": {
-    "dotenv": "^16.4.7",
     "express": "^4.17.1",
     "mongodb": "^4.1.0"
   }
