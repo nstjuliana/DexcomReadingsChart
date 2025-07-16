@@ -100,36 +100,6 @@
             }
         });
 
-        function determineTimeUnit(chart) {
-            // Calculate the visible range from the x-axis scale
-            const xScale = chart.scales.x;
-            const xmax = xScale.max; // Current maximum timestamp on the x-axis
-            const xmin = xScale.min; // Current minimum timestamp on the x-axis
-
-            const range = xmax - xmin;
-            const hourInMs = 60 * 60 * 1000;
-            console.log("Determining time unit for range:", range / hourInMs);
-
-            const settings = [
-                { maxRange: 1 * hourInMs, unit: 'minute', stepSize: 5 }, // 1 hour
-                { maxRange: 2 * hourInMs, unit: 'minute', stepSize: 10 }, // 2 hours
-                { maxRange: 3 * hourInMs, unit: 'minute', stepSize: 15 }, // 3 hours
-                { maxRange: 6 * hourInMs, unit: 'minute', stepSize: 30 }, // 6 hours
-                { maxRange: 12 * hourInMs, unit: 'hour', stepSize: 1 }, // 12 hours
-                { maxRange: 24 * hourInMs, unit: 'hour', stepSize: 2 }, // 24 hours
-                { maxRange: 48 * hourInMs, unit: 'hour', stepSize: 4 }, // 48 hours
-                { maxRange: 96 * hourInMs, unit: 'hour', stepSize: 6 }, // 96 hours
-                { maxRange: 192 * hourInMs, unit: 'hour', stepSize: 12 }, // 192 hours
-                { maxRange: Infinity, unit: 'day', stepSize: undefined } // More than 192 hours
-            ];
-
-            const { unit, stepSize } = settings.find(s => range <= s.maxRange) || settings[settings.length - 1];
-            chart.options.scales.x.time.unit = unit;
-            chart.options.scales.x.ticks.stepSize = stepSize;
-            console.log(`Time unit set to ${unit}${stepSize ? ` with step ${stepSize}` : ''}`);
-            chart.update('none');
-        }
-
         function setZoomLimits() {
             if (!chart || !chart.data.datasets[0].data.length) return;
             const xValues = chart.data.datasets[0].data.map(point => point.x.getTime());
@@ -138,8 +108,6 @@
                 max: Math.max(...xValues)
             };
             chart.resetZoom();
-            // Update time unit after resetting zoom
-            determineTimeUnit(chart);
         }
 
         function createChart() {
@@ -182,7 +150,6 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: 'hour',
                                 displayFormats: {
                                     hour: 'h:mm a',
                                     day: 'MM/dd'
@@ -259,10 +226,7 @@
                                 pinch: {
                                     enabled: true
                                 },
-                                mode: 'x',
-                                onZoomComplete: function() {
-                                    // determineTimeUnit(chart);
-                                }
+                                mode: 'x'
                             }
                         },
                         annotation: {
@@ -305,11 +269,8 @@
             chart.canvas.addEventListener('dblclick', function() {
                 if (chart) {
                     chart.resetZoom();
-                    determineTimeUnit(chart);
                 }
             });
-
-            // determineTimeUnit(chart);
         }
 
         async function fetchData(hours = currentHours, reset = false) {
@@ -342,7 +303,6 @@
                 
                 console.log(`Chart updated with ${chart.data.datasets[0].data.length} data points`);
                 updateLatestReading();
-                determineTimeUnit(chart);
             } catch (error) {
                 console.error('Fetch error:', error);
             }
