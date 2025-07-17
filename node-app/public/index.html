@@ -4,13 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${websiteName}</title>
-    <br>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         // Enable class-based dark mode instead of media-based
         tailwind.config = {
@@ -19,10 +14,9 @@
     </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
-
     <div class="container mx-auto px-4 max-w-4xl">
         <!-- Website Title + Dark Mode Toggle -->
-        <div class="flex justify-between items-center ">
+        <div class="flex justify-between items-center">
             <h1 class="text-2xl md:text-3xl font-bold text-black-600 dark:text-white">
                 <span id="websiteName"></span>
             </h1>
@@ -46,7 +40,7 @@
         </div>
 
         <!-- Time Range Buttons -->
-        <div class="flex flex-wrap justify-center gap-2 mb-6 ">
+        <div class="flex flex-wrap justify-center gap-2 mb-6">
             <button class="time-btn bg-blue-500 dark:bg-slate-600 hover:bg-blue-600 dark:hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition duration-200" data-hours="3">3h</button>
             <button class="time-btn bg-blue-500 dark:bg-slate-600 hover:bg-blue-600 dark:hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition duration-200" data-hours="6">6h</button>
             <button class="time-btn bg-blue-500 dark:bg-slate-600 hover:bg-blue-600 dark:hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition duration-200" data-hours="12">12h</button>
@@ -55,19 +49,21 @@
         </div>
 
         <!-- Glucose Chart -->
-        <div class="bg-white shadow-lg rounded dark:bg-gray-800 rounded-lg shadow-lg p-4">
-            <canvas id="glucoseChart"></canvas>
+        <div class="bg-white shadow-lg rounded dark:bg-gray-800 rounded-lg shadow-lg p-4 chart-container">
+            <svg id="glucoseChart"></svg>
         </div>
     </div>
 
     <script>
-        let chart;
         let labels = [];
         let values = [];
         let currentHours = 6;
         let websiteName;
         let websiteDescription;
+        let svg, xScale, yScale, line, zoom, chartArea, xAxis, yAxis;
+        let currentTransform, initialTransform;
 
+        // Fetch configuration
         fetch('/config')
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch config');
@@ -95,213 +91,287 @@
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('websiteName').textContent = websiteName;
             document.getElementById('websiteDescription').textContent = websiteDescription;
-            if(websiteName && latestValue) {
+            if (websiteName && latestValue) {
                 document.title = `${websiteName}:`;
             }
         });
 
-        function setZoomLimits() {
-            if (!chart || !chart.data.datasets[0].data.length) return;
-            const xValues = chart.data.datasets[0].data.map(point => point.x.getTime());
-            chart.options.plugins.zoom.limits.x = {
-                min: Math.min(...xValues),
-                max: Math.max(...xValues)
-            };
-            chart.resetZoom();
-        }
-
         function createChart() {
-            const ctx = document.getElementById('glucoseChart').getContext('2d');
-            if (chart) chart.destroy();
+            const container = document.querySelector('.chart-container');
+            const width = container.clientWidth;
+            const height = window.innerWidth <= 640 ? 350 : 450;
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 };
 
-            const isDark = document.documentElement.classList.contains('dark');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Glucose',
-                        data: values.map((value, index) => ({
-                            x: labels[index],
-                            y: value
-                        })).filter(point => point.y !== null && point.y !== undefined),
-                        borderColor: '#3b82f6',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 2,
-                        spanGaps: false,
-                        showLine: true,
-                        segment: {
-                            borderColor: (ctx) => {
-                                const prev = ctx.p0DataIndex !== null ? ctx.chart.data.datasets[0].data[ctx.p0DataIndex] : null;
-                                const curr = ctx.p1DataIndex !== null ? ctx.chart.data.datasets[0].data[ctx.p1DataIndex] : null;
-                                if (prev && curr && labels[ctx.p1DataIndex] - labels[ctx.p0DataIndex] > 16 * 60 * 1000) {
-                                    return 'transparent';
-                                }
-                                return '#3b82f6';
-                            }
-                        }
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                displayFormats: {
-                                    hour: 'h:mm a',
-                                    day: 'MM/dd'
-                                }
-                            },
-                            grid: { 
-                                color: isDark ? '#4b5563' : '#e5e7eb',
-                                drawOnChartArea: true
-                            },
-                            ticks: {
-                                color: isDark ? '#d1d5db' : '#374151',
-                                maxRotation: 0,
-                                source: 'data',
-                                autoSkip: true,
-                                includeBounds: true
-                            },
-                            min: function() {
-                                if (labels.length > 0) {
-                                    return labels[0].getTime();
-                                }
-                                return null;
-                            },
-                            max: function() {
-                                if (labels.length > 0) {
-                                    return labels[labels.length - 1].getTime();
-                                }
-                                return null;
-                            }
-                        },
-                        y: {
-                            min: 0,
-                            max: 250,
-                            title: {
-                                display: true,
-                                text: 'mg/dL',
-                                color: isDark ? '#d1d5db' : '#374151'
-                            },
-                            grid: { 
-                                color: isDark ? '#4b5563' : '#e5e7eb'
-                            },
-                            ticks: {
-                                color: isDark ? '#d1d5db' : '#374151'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            mode: 'nearest',
-                            intersect: false,
-                            backgroundColor: isDark ? '#1f2937' : '#ffffff',
-                            titleColor: isDark ? '#d1d5db' : '#374151',
-                            bodyColor: isDark ? '#d1d5db' : '#374151',
-                            callbacks: {
-                                label: ctx => `${ctx.raw.y} mg/dL`
-                            }
-                        },
-                        zoom: {
-                            limits: {
-                                x: { min: 'original', max: 'original' },
-                                y: { min: 40, max: 300 }
-                            },
-                            pan: {
-                                enabled: true,
-                                mode: 'x',
-                                threshold: 0,
-                                modifierKey: null
-                            },
-                            zoom: {
-                                wheel: { 
-                                    enabled: true,
-                                    speed: 0.1
-                                },
-                                pinch: {
-                                    enabled: true
-                                },
-                                mode: 'x'
-                            }
-                        },
-                        annotation: {
-                            annotations: {
-                                line70: {
-                                    type: 'line',
-                                    yMin: 70,
-                                    yMax: 70,
-                                    borderColor: '#ef4444',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5]
-                                },
-                                line180: {
-                                    type: 'line',
-                                    yMin: 180,
-                                    yMax: 180,
-                                    borderColor: '#ef4444',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5]
-                                }
-                            }
-                        },
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        intersect: false
-                    }
-                }
+            // Clear previous SVG if exists
+            d3.select('#glucoseChart').selectAll('*').remove();
+
+            // Create SVG
+            svg = d3.select('#glucoseChart')
+                .attr('width', '100%')
+                .attr('height', height)
+                .style('touch-action', 'none')
+                .style('cursor', 'grab');
+
+            // Create chart area
+            chartArea = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Define scales
+            xScale = d3.scaleTime()
+                .range([0, width - margin.left - margin.right]);
+            
+            yScale = d3.scaleLinear()
+                .domain([0, 250])
+                .range([height - margin.top - margin.bottom, 0]);
+
+            // Define line generator
+            line = d3.line()
+                .x(d => xScale(d.x))
+                .y(d => yScale(d.y))
+                .curve(d3.curveMonotoneX)
+                .defined(d => d.y !== null && d.y !== undefined);
+
+            // Define axes
+            xAxis = chartArea.append('g')
+                .attr('transform', `translate(0,${height - margin.top - margin.bottom})`);
+            yAxis = chartArea.append('g');
+
+            // Add Y-axis label
+            chartArea.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', -margin.left + 0)
+                .attr('x', -(height - margin.top - margin.bottom) / 2)
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text('mg/dL');
+
+            // Add tooltip
+            const tooltip = d3.select('body').append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('padding', '5px 10px')
+                .style('border-radius', '4px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0);
+
+            // Add zoom behavior
+            zoom = d3.zoom()
+                .scaleExtent([1, 10])
+                .translateExtent([[0, 0], [width - margin.left - margin.right, height - margin.top - margin.bottom]])
+                .on('zoom', zoomed);
+
+            svg.call(zoom);
+
+            svg.on('dblclick.zoom', null); // Remove default zoom-on-dblclick
+
+            svg.on('dblclick', function(event) {
+                svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity); // Reset zoom
             });
 
-            chart.resetZoom();
-            chart.canvas.addEventListener('mousedown', function() {
-                console.log('Canvas mousedown');
+            function zoomed(event) {
+                const transform = event.transform;
+                const newXScale = transform.rescaleX(xScale);
+
+                currentTransform = transform;
+
+                // Define tickColor based on theme
+                const isDark = document.documentElement.classList.contains('dark');
+                const tickColor = isDark ? '#a5a6a8' : '#374151';
+
+                // Update x-axis
+                xAxis.call(d3.axisBottom(newXScale).tickFormat(d3.timeFormat('%I:%M %p')))
+                    .selectAll('text')
+                    .style('fill', tickColor)
+                    .style('font-family', 'Arial')
+                    .style('font-size', '14px')
+                    .style('fill', tickColor);
+                
+                // Update y-axis
+                yAxis.call(d3.axisLeft(yScale))
+                    .selectAll('text')
+                    .style('fill', tickColor)
+                    .style('font-family', 'Arial')
+                    .style('font-size', '14px')
+                    .style('fill', tickColor);
+
+                // Update the line generator with the new x-scale
+                const zoomedLine = d3.line()
+                    .x(d => newXScale(d.x))
+                    .y(d => yScale(d.y))
+                    .curve(d3.curveMonotoneX)
+                    .defined(d => d.y !== null && d.y !== undefined);
+
+                // Update main line
+                chartArea.selectAll('.line')
+                    .attr('d', d => zoomedLine(d));
+
+                // Update segmented lines
+                chartArea.selectAll('.line-segment')
+                    .attr('d', d => zoomedLine(d));
+
+                // Update data point positions
+                chartArea.selectAll('.data-point')
+                    .attr('cx', d => newXScale(d.x));
+
+                // Update annotation lines to span the visible chart area
+                const chartWidth = document.querySelector('.chart-container').clientWidth - 80;
+                chartArea.selectAll('.annotation-line')
+                    .attr('x1', 0) // Start at the left edge of the chart
+                    .attr('x2', chartWidth); // End at the right edge of the chart
+            }
+
+            // Add interaction for tooltips
+            const bisect = d3.bisector(d => d.x).left;
+            svg.on('mousemove touchmove', function(event) {
+                if (!labels.length) return;
+                const [xPos, yPos] = d3.pointer(event, chartArea.node());
+                const x0 = xScale.invert(xPos);
+                const i = bisect(labels.map((d, i) => ({ x: d, y: values[i] })), x0, 1);
+                const d0 = labels[i - 1] ? { x: labels[i - 1], y: values[i - 1] } : null;
+                const d1 = labels[i] ? { x: labels[i], y: values[i] } : null;
+                if (!d0 || !d1) return;
+                const d = x0 - d0.x > d1.x - x0 ? d1 : d0;
+                
+                // Get the SVG position of the data point
+                const svgX = xScale(d.x) + margin.left;
+                const svgY = yScale(d.y) + margin.top;
+                
+                tooltip.style('opacity', 0.9)
+                .html(`${d.y} mg/dL<br>${d3.timeFormat('%I:%M %p')(d.x)}`)
+                .style('left', `${svgX + container.getBoundingClientRect().left + window.scrollX + 10}px`)
+                .style('top', `${svgY + container.getBoundingClientRect().top + window.scrollY - 40}px`);
+            }).on('mouseout touchend', () => {
+                tooltip.style('opacity', 0);
             });
 
-            chart.canvas.addEventListener('touchstart', function() {
-                console.log('Canvas touchstart');
-            });
+            // Add annotation lines at y = 70 and y = 180
+const annotationYs = [70, 180];
+annotationYs.forEach(yValue => {
+    chartArea.append("line")
+        .attr("class", "annotation-line")
+        .attr("x1", 0)
+        .attr("x2", xScale.range()[1])
+        .attr("y1", yScale(yValue))
+        .attr("y2", yScale(yValue))
+        .attr("stroke", "red")
+        .attr("stroke-dasharray", "5,5")
+        .attr("stroke-width", 1.5);
+});
 
-            chart.canvas.addEventListener('dblclick', function() {
-                if (chart) {
-                    chart.resetZoom();
-                }
-            });
+    
+            updateChartTheme();
         }
 
-        async function fetchData(hours = currentHours, reset = false) {
-            try {
-                console.log(`Fetching data for ${hours} hours, reset: ${reset}`);
-                const limit = hours === 'all' ? 10000 : hours * 12;
-                const response = await fetch(`/api/data?limit=${limit}`);
-                const result = await response.json();
+        function updateChart(resetZoom = false) {
+            if (!labels.length) return;
+            currentTransform = d3.zoomTransform(svg.node()); // capture current zoom
+            
+
+            const width = document.querySelector('.chart-container').clientWidth - 80;
+            const data = labels.map((label, i) => ({ x: label, y: values[i] }))
+                .filter(d => d.y !== null && d.y !== undefined);
+
+            xScale.domain(d3.extent(data, d => d.x))
+                .range([0, width]);
+
+            // Update axes
+            xAxis.call(d3.axisBottom(xScale).tickFormat(d3.timeFormat('%I:%M %p')));
+            yAxis.call(d3.axisLeft(yScale));
+
+            chartArea.selectAll('.line').remove(); 
+
+            // Draw main line
+            chartArea.append('path')
+                .datum(data)
+                .attr('class', 'line')
+                .attr('fill', 'none')
+                .attr('stroke', '#3b82f6')
+                .attr('stroke-width', 2)
+                .attr('d', line);
+            
                 
-                if (!result.success) throw new Error('Data fetch failed');
                 
-                const data = result.data;
-                const newLabels = data.map(item => new Date(item._datetime));
-                const newValues = data.map(item => item._value);
+                // Remove any existing circles first
+                chartArea.selectAll('.data-point').remove();
+                
+                // Add circles for each data point
+                chartArea.selectAll('.data-point')
+                .data(data)
+                .enter()
+                .append('circle')
+                .attr('class', 'data-point')
+                .attr('cx', d => xScale(d.x))
+                .attr('cy', d => yScale(d.y))
+                .attr('r', 3)
+                .attr('fill', '#3b82f6')
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 1.5);
+                
+                // Handle gaps (similar to Chart.js segment logic)
+                const segments = [];
+                let currentSegment = [];
+                data.forEach((d, i) => {
+                    currentSegment.push(d);
+                    if (i < data.length - 1 && (labels[i + 1] - labels[i]) > 16 * 60 * 1000) {
+                        segments.push(currentSegment);
+                        currentSegment = [];
+                    }
+                });
+                if (currentSegment.length) segments.push(currentSegment);
+                
+                chartArea.selectAll('.line-segment').remove();
+                chartArea.selectAll('.line-segment')
+                .data(segments)
+                .enter()
+                .append('path')
+                .attr('class', 'line-segment')
+                .attr('fill', 'none')
+                .attr('stroke', '#3b82f6')
+                .attr('stroke-width', 2)
+                .attr('d', line);
+                
+                // Reset zoom after updating the chart
+                if (resetZoom) {
+                    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+                } else {
+                    svg.call(zoom.transform, currentTransform); // preserve zoom
+                }
+            }
+            
+            function updateChartTheme() {
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? '#4b5563' : '#e5e7eb';
+                const tickColor = isDark ? '#d1d5db' : '#374151';
+                xAxis.selectAll('.tick line, .domain').style('stroke', gridColor);
+                yAxis.selectAll('.tick line, .domain').style('stroke', gridColor);
+                yAxis.selectAll('text').style('fill', tickColor);
+                xAxis.selectAll('text').style('fill', tickColor);
+                chartArea.select('text').style('fill', tickColor);
+                d3.select('.tooltip').style('background', isDark ? '#1f2937' : '#ffffff')
+                .style('color', isDark ? '#d1d5db' : '#374151');
+            }
+            
+            async function fetchData(hours = currentHours, resetZoom  = false) {
+                try {
+                    console.log(`Fetching data for ${hours} hours, reset: ${resetZoom}`);
+                    const limit = hours === 'all' ? 10000 : hours * 12;
+                    const response = await fetch(`/api/data?limit=${limit}`);
+                    const result = await response.json();
+                    
+                    if (!result.success) throw new Error('Data fetch failed');
+                    
+                    const data = result.data;
+                    const newLabels = data.map(item => new Date(item._datetime));
+                    const newValues = data.map(item => item._value);
 
                 const hasNewData = newLabels.length > labels.length;
                 
                 labels = newLabels;
                 values = newValues;
 
-                chart.data.labels = labels;
-                chart.data.datasets[0].data = values.map((value, index) => ({
-                    x: labels[index],
-                    y: value
-                })).filter(point => point.y !== null && point.y !== undefined);
-
-                if (hasNewData || reset) {
-                    await setZoomLimits();
-                }
-                
-                console.log(`Chart updated with ${chart.data.datasets[0].data.length} data points`);
+                updateChart(resetZoom);
                 updateLatestReading();
             } catch (error) {
                 console.error('Fetch error:', error);
@@ -324,62 +394,51 @@
             }
         }
 
-        function updateChartTheme(){
-            const isDark = localStorage.getItem('theme') === 'dark' || 
-            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            console.log("Updating chart theme to", isDark);
-
-            const scales = chart.options.scales;
-            scales.x.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.x.ticks.color = isDark ? '#cfcfcf' : '#3b3b3b';
-            scales.y.grid.color = isDark ? '#4b5563' : '#e5e7eb';
-            scales.y.ticks.color = isDark ? '#cfcfcf' : '#3b3b3b';
-            scales.y.title.color = isDark ? '#cfcfcf' : '#3b3b3b';
-            chart.options.plugins.tooltip.backgroundColor = isDark ? '#1f2937' : '#ffffff';
-            chart.options.plugins.tooltip.titleColor = isDark ? '#d1d5db' : '#374151';
-            chart.options.plugins.tooltip.bodyColor = isDark ? '#d1d5db' : '#374151';
-            chart.update('none');
-        }
-
-        themeToggle.addEventListener('click', () => {
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            themeToggle.querySelector('.sun').classList.toggle('hidden', isDark);
-            themeToggle.querySelector('.moon').classList.toggle('hidden', !isDark);
+            document.querySelector('.sun').classList.toggle('hidden', isDark);
+            document.querySelector('.moon').classList.toggle('hidden', !isDark);
             updateChartTheme();
         });
 
+        // Time range buttons
         document.querySelectorAll('.time-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+
+
                 currentHours = btn.dataset.hours;
                 fetchData(currentHours, true);
-                
                 document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 console.log(`Changing to ${currentHours} hours view`);
+                updateChart();
             });
         });
 
+        // Window load
         window.onload = async () => {
             createChart();
             await fetchData(6, true);
-            updateChartTheme();
-            setInterval(() => fetchData(currentHours, false), 5000);
-            setInterval(updateLatestReading, 1000);
-
-            //Set 6 hour to active button
             document.querySelector('.time-btn[data-hours="6"]').classList.add('active');
-
             const isDark = localStorage.getItem('theme') === 'dark' ||
                 (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
             if (isDark) {
                 document.documentElement.classList.add('dark');
-                themeToggle.querySelector('.sun').classList.add('hidden');
-                themeToggle.querySelector('.moon').classList.remove('hidden');
+                document.querySelector('.sun').classList.add('hidden');
+                document.querySelector('.moon').classList.remove('hidden');
             }
+            setInterval(() => fetchData(currentHours, false), 5000);
+            setInterval(updateLatestReading, 1000);
         };
 
-        window.onresize = () => chart?.resize();
+        // Resize handler
+        window.onresize = () => {
+            createChart();
+            updateChart();
+            updateChartTheme();
+        };
     </script>
 
     <style>
